@@ -37,7 +37,7 @@ void UITextInput::setMenuSingleton(UIGlobalMenu *_globalMenu) {
 	globalMenuSingleton = _globalMenu;
 }
 
-UITextInput::UITextInput(bool multiLine, Number width, Number height) : UIElement(width, height) {
+UITextInput::UITextInput(bool multiLine, Number width, Number height, int customFontSize, const String &customFont, int customLineSpacing) : UIElement(width, height) {
 	this->multiLine = multiLine;
 	processInputEvents = true;
 	isNumberOnly = false;
@@ -72,16 +72,23 @@ UITextInput::UITextInput(bool multiLine, Number width, Number height) : UIElemen
 	setAnchorPoint(0.0, 0.0, 0.0);
 	Config *conf = CoreServices::getInstance()->getConfig();	
 	
+    if(customFont != "") {
+        fontName = customFont;
+    } else {
 	if(multiLine)
 		fontName = conf->getStringValue("Polycode", "uiTextInputFontNameMultiLine");
 	else
 		fontName = conf->getStringValue("Polycode", "uiTextInputFontName");
-	
-	if(multiLine)
-		fontSize = conf->getNumericValue("Polycode", "uiTextInputFontSizeMultiline");	
-	else
-		fontSize = conf->getNumericValue("Polycode", "uiTextInputFontSize");
-	
+    }
+    if(customFontSize != -1) {
+        fontSize = customFontSize;
+    } else {
+        if(multiLine)
+            fontSize = conf->getNumericValue("Polycode", "uiTextInputFontSizeMultiline");	
+        else
+            fontSize = conf->getNumericValue("Polycode", "uiTextInputFontSize");
+    }
+    
 	Number rectHeight = height;
 	if(!multiLine) {
 		rectHeight = fontSize+10;
@@ -90,8 +97,13 @@ UITextInput::UITextInput(bool multiLine, Number width, Number height) : UIElemen
 	linesContainer = new Entity();	
 	linesContainer->processInputEvents = true;
 	linesContainer->ownsChildren = true;
-	lineSpacing = conf->getNumericValue("Polycode", "textEditLineSpacing");
-	
+    
+    if(customLineSpacing != -1) {
+        lineSpacing = customLineSpacing;
+    } else {
+        lineSpacing = conf->getNumericValue("Polycode", "textEditLineSpacing");
+    }
+    
 	st = conf->getNumericValue("Polycode", "textBgSkinT");
 	sr = conf->getNumericValue("Polycode", "textBgSkinR");
 	sb = conf->getNumericValue("Polycode", "textBgSkinB");
@@ -116,7 +128,13 @@ UITextInput::UITextInput(bool multiLine, Number width, Number height) : UIElemen
 	} else {
 		inputRect = new UIBox(conf->getStringValue("Polycode", "textBgSkin"),
 						  st,sr,sb,sl,
-						  width+(padding*2), height+(padding*2));	
+						  width+(padding*2), height+(padding*2));
+        
+        inputRectSelected = new UIBox(conf->getStringValue("Polycode", "textBgSkinFocus"),
+                              st,sr,sb,sl,
+                              width+(padding*2), height+(padding*2));
+        inputRectSelected->visible = false;
+        addChild(inputRectSelected);
 	}
 	
 	addChild(inputRect);		
@@ -219,8 +237,8 @@ UITextInput::UITextInput(bool multiLine, Number width, Number height) : UIElemen
 	indentSpacing = 4;
 	indentType = INDENT_TAB;
 	
-	core->getInput()->addEventListener(this, InputEvent::EVENT_KEYDOWN);
-	core->getInput()->addEventListener(this, InputEvent::EVENT_MOUSEUP);
+	core->getInput()->addEventListenerUnique(this, InputEvent::EVENT_KEYDOWN);
+	core->getInput()->addEventListenerUnique(this, InputEvent::EVENT_MOUSEUP);
 }
 
 void UITextInput::checkBufferLines() {
@@ -395,7 +413,7 @@ void UITextInput::updateSelectionRects() {
 				midHeight += lineHeight+lineSpacing;
 			}
 			selectorRectMiddle->Resize(midSize, midHeight);
-			selectorRectMiddle->setPosition(- horizontalPixelScroll, ((lineStart+1) * (lineHeight+lineSpacing)));	
+			selectorRectMiddle->setPosition(- horizontalPixelScroll, ((lineStart+1) * (lineHeight+lineSpacing)));
 			
 		}
 		
@@ -709,6 +727,9 @@ void UITextInput::Resize(Number width, Number height) {
 	didMultilineResize = false;
 	
 	inputRect->resizeBox(width, height);
+    if(!multiLine) {
+        inputRectSelected->resizeBox(width, height);
+    }
 	setWidth(width);
 	setHeight(height);
 	matrixDirty = true;	
@@ -2158,6 +2179,12 @@ void UITextInput::onKeyDown(PolyKEY key, wchar_t charCode) {
 void UITextInput::Update() {
 	resizeTimer += core->getElapsed();
 	
+    
+    if(!multiLine) {
+        inputRectSelected->visible = hasFocus;
+        inputRect->visible = !hasFocus;
+    }
+    
 	if(draggingSelection) {
 		if(selectionDragMouse != dragMouseStart) {
 			dragSelectionTo(selectionDragMouse.x, selectionDragMouse.y - linesContainer->getPosition().y);	
@@ -2607,6 +2634,15 @@ void UITextInput::handleEvent(Event *event) {
 		}
 	}
 	
+    UIElement::handleEvent(event);
+}
+
+void UITextInput::onGainFocus() {
+    blinkerRect->visible  = true;
+    blinkTimer->Reset();
+    if(!multiLine) {
+        selectAll();
+    }
 }
 
 void UITextInput::shiftText(bool left) {

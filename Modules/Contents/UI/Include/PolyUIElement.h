@@ -43,23 +43,26 @@ namespace Polycode {
 			bool hasFocus;
 			bool focusable;
 			
-			void addChild(Entity *child);
-			
 			void setDragLimits(Rectangle rect);
 			void clearDragLimits();
 			bool isDragged();
 			void startDrag(Number xOffset, Number yOffset);
 			void stopDrag();
+        
+            void handleEvent(Event *event);
 			
 			void focusChild(UIElement *child);
 			void focusNextChild();
+			void focusPreviousChild();
 			bool isFocusable();
 			void focusSelf();
 									
 			virtual void onLoseFocus() {}
 			virtual void onGainFocus() {}
 			
-			void addFocusChild(UIElement *element);			
+			void addFocusChild(UIElement *element);
+			void registerFocusChild(UIElement *element);
+			void unregisterFocusChild(UIElement *element);
 			void setFocusParent(UIElement *element);
 
 			MouseEventResult onMouseMove(const Ray &ray, int timestamp);

@@ -39,6 +39,8 @@ class TextInputPopup : public UIWindow {
 		String getValue();
 		void handleEvent(Event *event);
 		
+        virtual void onGainFocus();
+    
 		String action;
 				
 	protected:
@@ -57,6 +59,8 @@ class MessagePopup : public UIWindow {
     void setCaption(String caption);
     void handleEvent(Event *event);
     
+    virtual void onGainFocus();
+    
         String action;
         UILabel *captionLabel;
         UIButton *okButton;
@@ -71,11 +75,13 @@ class YesNoPopup : public UIWindow {
 		void setCaption(String caption);
 		void handleEvent(Event *event);
 		
+        virtual void onGainFocus();
+    
 		String action;
 	
 		UILabel *captionLabel;
 	
-		Entity *buttonAnchor;
+		UIElement *buttonAnchor;
 		UIButton *cancelButton;
 		UIButton *okButton;	
 };
@@ -89,11 +95,13 @@ class YesNoCancelPopup : public UIWindow {
 		void setCaption(String caption);
 		void handleEvent(Event *event);
 		
+        virtual void onGainFocus();
+    
 		String action;
 	
 		UILabel *captionLabel;
 	
-		Entity *buttonAnchor;
+		UIElement *buttonAnchor;
 		UIButton *cancelButton;
 		UIButton *noButton;		
 		UIButton *okButton;
@@ -110,6 +118,8 @@ class AssetImporterWindow : public UIWindow {
 		
 		void setSourceFileAndTargetFolder(String file, String folder, String projectRelativeFolder);
 		void refreshPreview();
+    
+        virtual void onGainFocus();
 			
 		void handleEvent(Event *event);	
 			
@@ -142,7 +152,7 @@ class AssetImporterWindow : public UIWindow {
         UICheckBox *overrideMaterial;
         UITextInput *overrideMaterialInput;
     
-		Entity *filesAnchor;
+		UIElement *filesAnchor;
 		UIScrollContainer *filesScroller;
 
 		UILabel *filesToImportLabel;

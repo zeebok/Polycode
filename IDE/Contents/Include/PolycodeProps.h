@@ -42,11 +42,12 @@ class PropProp : public UIElement {
 		virtual void setPropData(PolycodeEditorPropActionData* data) {}
 		
 		virtual void setPropWidth(Number width) {}
+        virtual void updateFocusVisibility() {}
         void setPropName(String newName);
     
 		String propType;
 		UILabel *label;
-		Entity *propContents;				
+		UIElement *propContents;
 		
 		bool suppressChangeEvent;		
 		bool settingFromData;
@@ -54,7 +55,7 @@ class PropProp : public UIElement {
 
 class Vector3Prop : public PropProp {
     public:
-        Vector3Prop(String caption);
+        Vector3Prop(String caption, UIElement *focusParent);
         ~Vector3Prop();
         void handleEvent(Event *event);
         void set(const Vector3 &position);
@@ -80,7 +81,7 @@ class Vector3Prop : public PropProp {
 
 class Vector2Prop : public PropProp {
 	public:
-		Vector2Prop(String caption);
+		Vector2Prop(String caption, UIElement *focusParent);
 		~Vector2Prop();		
 		void handleEvent(Event *event);
 		void set(Vector2 position);
@@ -120,7 +121,7 @@ class SliderProp : public PropProp {
 
 class ButtonProp : public PropProp {
     public:
-        ButtonProp(const String &caption);
+        ButtonProp(const String &caption, UIElement *focusParent);
         ~ButtonProp();
         void setPropWidth(Number width);
         UIButton *getButton();
@@ -133,14 +134,15 @@ class ButtonProp : public PropProp {
 
 class NumberProp : public PropProp {
 	public:
-		NumberProp(String caption);
+		NumberProp(String caption, UIElement *focusParent);
 		~NumberProp();		
 		void handleEvent(Event *event);
 		void set(Number number);
 		Number get();
-		
+    
 		void setPropWidth(Number width);
-		
+        void updateFocusVisibility();
+    
 		void setPropData(PolycodeEditorPropActionData* data);
 				
 		UITextInput *numberEntry;
@@ -265,7 +267,7 @@ class CustomProp : public PropProp {
 
 class StringProp : public PropProp {
 	public:
-		StringProp(String caption);
+		StringProp(String caption, UIElement *focusParent);
 		~StringProp();		
 		void handleEvent(Event *event);
 		void set(String str);
@@ -491,7 +493,7 @@ class PropSheet : public UIElement {
 		String type;
 		
 		Number propHeight;				
-		Entity *contents;
+		UIElement *contents;
 		
 		UIRect *bg;
 		
@@ -951,6 +953,7 @@ class PropList : public UIElement {
 		void updateProps();
 		void updateSize();
     
+        void setCaption(const String &newCaption);
 		void addPropSheet(PropSheet *sheet);
 		void handleEvent(Event *event);
 		void Resize(Number width, Number height);
@@ -958,8 +961,8 @@ class PropList : public UIElement {
 		UIScrollContainer *scrollContainer;		
 	protected:
 	
-		Entity *propContents;
-	
+		UIElement *propContents;
+        UILabel *label;
 		std::vector<PropSheet*> props;	
 		UIRect *bg;
 		UIRect *bg2;				

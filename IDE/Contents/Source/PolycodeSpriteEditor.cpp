@@ -165,7 +165,7 @@ SpriteSheetEditor::SpriteSheetEditor(SpriteSet *sprite) : UIElement() {
     label->setPosition(120.0 - label->getWidth(), 68.0);
     
     uniformGridWidthInput = new UITextInput(false, 100.0, 12);
-    uniformOptions->addChild(uniformGridWidthInput);
+    uniformOptions->addFocusChild(uniformGridWidthInput);
     uniformGridWidthInput->setPosition(130.0, 65.0);
     uniformGridWidthInput->setText("32");
     uniformGridWidthInput->setNumberOnly(true);
@@ -175,7 +175,7 @@ SpriteSheetEditor::SpriteSheetEditor(SpriteSet *sprite) : UIElement() {
     label->setPosition(120.0 - label->getWidth(), 93.0);
     
     uniformGridHeightInput = new UITextInput(false, 100, 12);
-    uniformOptions->addChild(uniformGridHeightInput);
+    uniformOptions->addFocusChild(uniformGridHeightInput);
     uniformGridHeightInput->setPosition(130.0, 90);
     uniformGridHeightInput->setText("32");
     uniformGridHeightInput->setNumberOnly(true);
@@ -185,7 +185,7 @@ SpriteSheetEditor::SpriteSheetEditor(SpriteSet *sprite) : UIElement() {
     label->setPosition(120.0 - label->getWidth(), 68.0);
     
     minimumDistanceInput = new UITextInput(false, 30, 12);
-    detectOptions->addChild(minimumDistanceInput);
+    detectOptions->addFocusChild(minimumDistanceInput);
     minimumDistanceInput->setPosition(130.0, 65.0);
     minimumDistanceInput->setText("0");
     minimumDistanceInput->setNumberOnly(true);
@@ -291,6 +291,12 @@ void SpriteSheetEditor::handleEvent(Event *event) {
         extensions.push_back("tga");
         globalFrame->showAssetBrowser(extensions);
     } else if(event->getDispatcher() == generateFramesButton) {
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < sprite->getNumFrames(); i++) {
+            beforeData->spriteFrames.push_back(sprite->getSpriteFrame(i));
+        }
+        
         if(generateTypeDropdown->getSelectedIndex() == 0) {
             int numX = floor(sprite->getTexture()->getWidth() / uniformGridWidthInput->getText().toNumber());
             int numY = floor(sprite->getTexture()->getHeight() / uniformGridHeightInput->getText().toNumber());
@@ -298,6 +304,13 @@ void SpriteSheetEditor::handleEvent(Event *event) {
         } else {
             sprite->createFramesFromIslands(minimumDistanceInput->getText().toInteger(), defaultAnchors[defaultAnchorCombo->getSelectedIndex()]);
         }
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < sprite->getNumFrames(); i++) {
+            data->spriteFrames.push_back(sprite->getSpriteFrame(i));
+        }
+        data->reverse = false;
+        editor->didAction("changed_frames", beforeData, data);
         
         dispatchEvent(new Event(),Event::CHANGE_EVENT);
     } else if(event->getDispatcher() == bgSelector) {
@@ -322,13 +335,37 @@ void SpriteSheetEditor::handleEvent(Event *event) {
             detectOptions->enabled = true;
         }
     } else if(event->getDispatcher() == clearFramesButton) {
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < sprite->getNumFrames(); i++) {
+            beforeData->spriteFrames.push_back(sprite->getSpriteFrame(i));
+        }
+        
         sprite->clearFrames();
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < sprite->getNumFrames(); i++) {
+            data->spriteFrames.push_back(sprite->getSpriteFrame(i));
+        }
+        data->reverse = false;
+        editor->didAction("changed_frames", beforeData, data);
+        
         dispatchEvent(new Event(),Event::CHANGE_EVENT);
     } else if(event->getDispatcher() == generateOptionsButton) {
         optionsWindow->visible = !optionsWindow->visible;
         optionsWindow->enabled = !optionsWindow->enabled;
     } else if(event->getDispatcher() == globalFrame->assetBrowser) {
         String newImagePath = globalFrame->assetBrowser->getSelectedAssetPath();
+        
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        beforeData->name = sprite->getTexture()->getResourcePath();
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        data->name = globalFrame->assetBrowser->getSelectedAssetPath();
+        data->reverse = false;
+        editor->didAction("changed_image", beforeData, data);
+        
         
         sprite->loadTexture(globalFrame->assetBrowser->getSelectedAssetPath());
         previewImage->setTexture(sprite->getTexture());
@@ -372,7 +409,21 @@ void SpriteSheetEditor::handleEvent(Event *event) {
             
             frame.anchorPoint = transformGrips->getAnchorPoint();
             
+            PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+            for(int i=0; i < sprite->getNumFrames(); i++) {
+                beforeData->spriteFrames.push_back(sprite->getSpriteFrame(i));
+            }
+            
             sprite->setSpriteFrame(frame);
+            
+            PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+            for(int i=0; i < sprite->getNumFrames(); i++) {
+                data->spriteFrames.push_back(sprite->getSpriteFrame(i));
+            }
+            data->reverse = false;
+            editor->didAction("changed_frames", beforeData, data);
+
+            
             dispatchEvent(new Event(),Event::CHANGE_EVENT);
         }
     } else if(event->getDispatcher() == previewBg) {
@@ -497,7 +548,21 @@ void SpriteSheetEditor::handleEvent(Event *event) {
                         }
                         
                         
+                        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                        for(int i=0; i < sprite->getNumFrames(); i++) {
+                            beforeData->spriteFrames.push_back(sprite->getSpriteFrame(i));
+                        }
+                        
                         sprite->addSpriteFrame(frameToAdd);
+                        
+                        
+                        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                        for(int i=0; i < sprite->getNumFrames(); i++) {
+                            data->spriteFrames.push_back(sprite->getSpriteFrame(i));
+                        }
+                        data->reverse = false;
+                        editor->didAction("changed_frames", beforeData, data);
+                        
                     }
                 }
                 creatingFrame = false;
@@ -518,10 +583,23 @@ void SpriteSheetEditor::selectAll() {
 
 void SpriteSheetEditor::deleteSelectedFrames() {
  
+    PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+    for(int i=0; i < sprite->getNumFrames(); i++) {
+        beforeData->spriteFrames.push_back(sprite->getSpriteFrame(i));
+    }
+    
     for(int i=0; i < selectedIDs.size(); i++) {
         sprite->removeFrameByID(selectedIDs[i]);
     }
     clearSelected();
+    
+    PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+    for(int i=0; i < sprite->getNumFrames(); i++) {
+        data->spriteFrames.push_back(sprite->getSpriteFrame(i));
+    }
+    data->reverse = false;
+    editor->didAction("changed_frames", beforeData, data);
+    
 }
 
 void SpriteSheetEditor::clearSelected() {
@@ -654,6 +732,7 @@ void SpriteBrowser::handleEvent(Event *event) {
     } else if(event->getDispatcher() == globalFrame->textInputPopup) {
         if(event->getEventCode() == UIEvent::OK_EVENT) {
             if(globalFrame->textInputPopup->action == "newSprite") {
+                
                 Sprite *newEntry = new Sprite(globalFrame->textInputPopup->getValue());
                 
                 SpriteState *defaultState = new SpriteState(spriteSet, "default");
@@ -662,8 +741,29 @@ void SpriteBrowser::handleEvent(Event *event) {
                 spriteSet->addSpriteEntry(newEntry);
                 selectedEntry = newEntry;
                 refreshSprites();
+
+                PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                beforeData->sprite = newEntry;
+                
+                PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                data->sprite = newEntry;
+                data->reverse = false;
+                editor->didAction("new_sprite", beforeData, data);
+                
             } else if(globalFrame->textInputPopup->action == "renameSprite") {
+                
+                PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                beforeData->sprite = selectedEntry;
+                beforeData->name = selectedEntry->getName();
+                
                 selectedEntry->setName(globalFrame->textInputPopup->getValue());
+                
+                PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                data->sprite = selectedEntry;
+                data->reverse = false;
+                data->name = selectedEntry->getName();
+                editor->didAction("rename_sprite", beforeData, data);
+                
                 refreshSprites();
             }
             globalFrame->textInputPopup->removeAllHandlersForListener(this);
@@ -673,6 +773,15 @@ void SpriteBrowser::handleEvent(Event *event) {
             if(globalFrame->yesNoPopup->action == "removeSprite") {
                 if(selectedEntry) {
                     spriteSet->removeSprite(selectedEntry);
+                    
+                    PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                    beforeData->sprite = selectedEntry;
+                    
+                    PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                    data->sprite = selectedEntry;
+                    data->reverse = false;
+                    editor->didAction("remove_sprite", beforeData, data);
+
                     selectedEntry = NULL;
                     refreshSprites();
                     dispatchEvent(new Event(), Event::CHANGE_EVENT);
@@ -794,7 +903,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     fpsInput = new UITextInput(false, 50.0, 12.0);
-    addChild(fpsInput);
+    addFocusChild(fpsInput);
     fpsInput->setPosition(65.0, 40.0);
     fpsInput->addEventListener(this, UIEvent::CHANGE_EVENT);
     
@@ -803,7 +912,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     scaleInput = new UITextInput(false, 50.0, 12.0);
-    addChild(scaleInput);
+    addFocusChild(scaleInput);
     scaleInput->setPosition(65.0, 65.0);
     scaleInput->addEventListener(this, UIEvent::CHANGE_EVENT);
 
@@ -812,7 +921,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     bBoxWidthInput = new UITextInput(false, 50.0, 12.0);
-    addChild(bBoxWidthInput);
+    addFocusChild(bBoxWidthInput);
     bBoxWidthInput->setPosition(65.0, 90.0);
     bBoxWidthInput->addEventListener(this, UIEvent::CHANGE_EVENT);
 
@@ -821,7 +930,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     bBoxHeightInput = new UITextInput(false, 50.0, 12.0);
-    addChild(bBoxHeightInput);
+    addFocusChild(bBoxHeightInput);
     bBoxHeightInput->setPosition(65.0, 115.0);
     bBoxHeightInput->addEventListener(this, UIEvent::CHANGE_EVENT);
 
@@ -830,7 +939,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     offsetXInput = new UITextInput(false, 50.0, 12.0);
-    addChild(offsetXInput);
+    addFocusChild(offsetXInput);
     offsetXInput->setPosition(65.0, 140.0);
     offsetXInput->addEventListener(this, UIEvent::CHANGE_EVENT);
     
@@ -839,7 +948,7 @@ SpriteStateEditorDetails::SpriteStateEditorDetails(SpriteSet *spriteSet) : UIEle
     addChild(label);
     
     offsetYInput = new UITextInput(false, 50.0, 12.0);
-    addChild(offsetYInput);
+    addFocusChild(offsetYInput);
     offsetYInput->setPosition(65.0, 165.0);
     offsetYInput->addEventListener(this, UIEvent::CHANGE_EVENT);
     
@@ -890,31 +999,87 @@ void SpriteStateEditorDetails::setSpriteState(SpriteState *state) {
     refreshState();
 }
 
+PolycodeSpriteEditorActionData *SpriteStateEditorDetails::makeStateData() {
+    PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+    data->stateFPS = spriteState->getStateFPS();
+    data->stateScale = spriteState->getPixelsPerUnit();
+    data->stateBBox = spriteState->getBoundingBox();
+    data->stateOffset = spriteState->getSpriteOffset();
+    data->state = spriteState;
+    return data;
+}
+
 void SpriteStateEditorDetails::handleEvent(Event *event) {
     if(event->getDispatcher() == fpsInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         spriteState->setStateFPS(fpsInput->getText().toNumber());
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == scaleInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         spriteState->setPixelsPerUnit(scaleInput->getText().toNumber());
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == bBoxWidthInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         Vector2 bBox = spriteState->getBoundingBox();
         spriteState->setBoundingBox(Vector2(bBoxWidthInput->getText().toNumber(), bBox.y));
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == bBoxHeightInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         Vector2 bBox = spriteState->getBoundingBox();
         spriteState->setBoundingBox(Vector2(bBox.x, bBoxHeightInput->getText().toNumber()));
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == offsetXInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         Vector2 offset = spriteState->getSpriteOffset();
         spriteState->setSpriteOffset(Vector2(offsetXInput->getText().toNumber(), offset.y));
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == offsetYInput) {
+        PolycodeSpriteEditorActionData *beforeData = makeStateData();
         Vector2 offset = spriteState->getSpriteOffset();
         spriteState->setSpriteOffset(Vector2(offset.x, offsetYInput->getText().toNumber()));
+        PolycodeSpriteEditorActionData *data = makeStateData();
+        editor->didAction("changed_state_info", beforeData, data);
     } else if(event->getDispatcher() == playButton) {
         sceneSprite->setPaused(false);
     }  else if(event->getDispatcher() == pauseButton) {
         sceneSprite->setPaused(true);
     } else if(event->getDispatcher() == clearFramesButton) {
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        
         spriteState->clearFrames();
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        data->reverse = false;
+        editor->didAction("changed_sprite_set_frames", beforeData, data);
+        
     } else if(event->getDispatcher() == removeFramesButton) {
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        
         editBar->deleteSelectedFrames();
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        data->reverse = false;
+        editor->didAction("changed_sprite_set_frames", beforeData, data);
+    
     }
 }
 
@@ -1273,11 +1438,40 @@ void SpriteStateEditBar::handleEvent(Event *event) {
                     
                     if(fabs(distance) > defaultFrameWidth * zoomScale) {
                         if(distance > 0.0) {
+                            
+                            PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                            for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                            }
+                            
                             spriteState->insertFrame(extendingIndex, extendingID);
+                            
+                            PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                            for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                            }
+                            data->reverse = false;
+                            editor->didAction("changed_sprite_set_frames", beforeData, data);
+                            
                         } else {
                             if(extendingIndex < spriteState->getNumFrameIDs()-1) {
                                 if(spriteState->getFrameIDAtIndex(extendingIndex+1) == extendingID) {
+                                    
+                                    
+                                    PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                                    for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                        beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                                    }
+                                    
                                     spriteState->removeFrameByIndex(extendingIndex+1);
+                                    
+                                    PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                                    for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                        data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                                    }
+                                    data->reverse = false;
+                                    editor->didAction("changed_sprite_set_frames", beforeData, data);
+                                    
                                 }
                             }
                         }
@@ -1291,11 +1485,26 @@ void SpriteStateEditBar::handleEvent(Event *event) {
                         Number distance = Services()->getCore()->getInput()->getMousePosition().x - frameMoveBase.x;
                         
                         if(fabs(distance) > defaultFrameWidth * zoomScale) {
+                            
+                            
+                            PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                            for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                            }
+                            
                             if(distance > 0.0) {
                                 moveSelectedRight();
                             } else {
                                 moveSelectedLeft();
                             }
+                            
+                            PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                            for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+                                data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+                            }
+                            data->reverse = false;
+                            editor->didAction("changed_sprite_set_frames", beforeData, data);
+                            
                             frameMoveBase =  Services()->getCore()->getInput()->getMousePosition();
                         }
                         
@@ -1549,6 +1758,10 @@ SpriteStateEditorDetails *SpriteStateEditor::getDetailsEditor() {
     return stateDetails;
 }
 
+SpriteStateBrowser *SpriteStateEditor::getStateBrowser() {
+    return stateBrowser;
+}
+
 void SpriteStateEditor::setSpriteEntry(Sprite *entry) {
     
     if(!entry) {
@@ -1585,10 +1798,37 @@ void SpriteStateEditor::handleEvent(Event *event) {
             if(globalFrame->textInputPopup->action == "newState") {
                 SpriteState *newState = new SpriteState(spriteSet, globalFrame->textInputPopup->getValue());
                 spriteSetEntry->addSpriteState(newState);
+                
+                PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                beforeData->sprite = spriteSetEntry;
+                beforeData->state = newState;
+                
+                PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                data->sprite = spriteSetEntry;
+                data->state = newState;
+                data->reverse = false;
+                editor->didAction("new_state", beforeData, data);
+                
                 refreshStates();
             } else if(globalFrame->textInputPopup->action == "renameState") {
+                
+                
+                PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                beforeData->state = selectedState;
+                beforeData->sprite = spriteSetEntry;
+                beforeData->name = selectedState->getName();
+                
                 selectedState->setName(globalFrame->textInputPopup->getValue());
                 refreshStates();
+                
+                PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                data->sprite = spriteSetEntry;
+                data->state = selectedState;
+                data->name = selectedState->getName();
+                data->reverse = false;
+                editor->didAction("rename_state", beforeData, data);
+                
+                
             }
         }
         globalFrame->textInputPopup->removeAllHandlersForListener(this);
@@ -1597,10 +1837,21 @@ void SpriteStateEditor::handleEvent(Event *event) {
             if(globalFrame->yesNoPopup->action == "removeState") {
                 if(selectedState) {
                     spriteSetEntry->removeSpriteState(selectedState);
-                    delete selectedState;
+
+                    PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+                    beforeData->state = selectedState;
+                    beforeData->sprite = spriteSetEntry;
+                    
+                    PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+                    data->sprite = spriteSetEntry;
+                    data->state = selectedState;
+                    data->reverse = false;
+                    editor->didAction("remove_state", beforeData, data);
+                    
                     selectedState = NULL;
                     stateDetails->setSpriteState(NULL);
                     refreshStates();
+                    
                     dispatchEvent(new Event(), Event::CHANGE_EVENT);
                 }
             }
@@ -1796,7 +2047,21 @@ void PolycodeSpriteEditor::handleEvent(Event *event) {
         if(spriteState->getNumFrameIDs() == 0) {
             generateBBox = true;
         }
+        
+        
+        PolycodeSpriteEditorActionData *beforeData = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            beforeData->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        
         spriteState->appendFrames(spriteSheetEditor->getSelectedFrameIDs());
+        
+        PolycodeSpriteEditorActionData *data = new PolycodeSpriteEditorActionData();
+        for(int i=0; i < spriteState->getNumFrameIDs(); i++) {
+            data->frameIDs.push_back(spriteState->getFrameIDAtIndex(i));
+        }
+        data->reverse = false;
+        didAction("changed_sprite_set_frames", beforeData, data);
         
         if(generateBBox && spriteSheetEditor->getSelectedFrameIDs().size() > 0) {
             
@@ -1866,13 +2131,18 @@ bool PolycodeSpriteEditor::openFile(OSFileEntry filePath) {
     spriteSheetEditor = new SpriteSheetEditor(sprite);
     topSizer->addLeftChild(spriteSheetEditor);
     spriteSheetEditor->addEventListener(this, Event::CHANGE_EVENT);
+    spriteSheetEditor->editor = this;
     
     spriteBrowser = new SpriteBrowser(sprite);
+    spriteBrowser->editor = this;
     bottomSizer->addLeftChild(spriteBrowser);
     spriteBrowser->addEventListener(this, Event::CHANGE_EVENT);
     
     stateEditor = new SpriteStateEditor(sprite);
     bottomSizer->addRightChild(stateEditor);
+    stateEditor->editor = this;
+    stateEditor->getDetailsEditor()->editor = this;
+    stateEditor->getDetailsEditor()->getEditBar()->editor = this;
     
     addFramesButton = stateEditor->getDetailsEditor()->getAppendFramesButton();
     addFramesButton->addEventListener(this, UIEvent::CLICK_EVENT);
@@ -1893,6 +2163,97 @@ bool PolycodeSpriteEditor::openFile(OSFileEntry filePath) {
 
 void PolycodeSpriteEditor::selectAll() {
     spriteSheetEditor->selectAll();
+}
+
+void PolycodeSpriteEditor::doAction(String actionName, PolycodeEditorActionData *data) {
+
+    PolycodeSpriteEditorActionData *spriteData = (PolycodeSpriteEditorActionData*)data;
+    
+    if(actionName == "new_sprite") {
+        if(spriteData->reverse) {
+            sprite->removeSprite(spriteData->sprite);
+            stateEditor->setSpriteEntry(NULL);
+        } else {
+            sprite->addSpriteEntry(spriteData->sprite);
+            stateEditor->setSpriteEntry(spriteData->sprite);
+        }
+        spriteBrowser->refreshSprites();
+        stateEditor->refreshStates();
+        
+    } else if(actionName == "remove_sprite") {
+        if(spriteData->reverse) {
+            sprite->addSpriteEntry(spriteData->sprite);
+            stateEditor->setSpriteEntry(spriteData->sprite);
+        } else {
+            sprite->removeSprite(spriteData->sprite);
+            stateEditor->setSpriteEntry(NULL);
+        }
+        spriteBrowser->refreshSprites();
+        stateEditor->refreshStates();
+    } else if(actionName == "rename_sprite") {
+        spriteData->sprite->setName(spriteData->name);
+        spriteBrowser->refreshSprites();
+        stateEditor->refreshStates();
+    } else if(actionName == "new_state") {
+
+        if(spriteData->reverse) {
+            spriteData->sprite->removeSpriteState(spriteData->state);
+            stateEditor->getDetailsEditor()->setSpriteState(NULL);
+        } else {
+            spriteData->sprite->addSpriteState(spriteData->state);
+            stateEditor->getDetailsEditor()->setSpriteState(spriteData->state);
+        }
+        stateEditor->refreshStates();
+ 
+    } else if(actionName == "remove_state") {
+        
+        if(spriteData->reverse) {
+            spriteData->sprite->addSpriteState(spriteData->state);
+            stateEditor->getDetailsEditor()->setSpriteState(spriteData->state);
+        } else {
+            spriteData->sprite->removeSpriteState(spriteData->state);
+            stateEditor->getDetailsEditor()->setSpriteState(NULL);
+        }
+        stateEditor->refreshStates();
+    } else if(actionName == "rename_state") {
+        
+        spriteData->state->setName(spriteData->name);
+        stateEditor->refreshStates();
+    } else if(actionName == "changed_sprite_set_frames") {
+        
+        SpriteState *spriteState = stateEditor->getDetailsEditor()->getSpriteState();
+        spriteState->clearFrames();
+        spriteState->appendFrames(spriteData->frameIDs);
+        
+        if(spriteSheetEditor->getSelectedFrameIDs().size() > 0) {
+            
+            SpriteFrame frame = sprite->getSpriteFrameByID(spriteSheetEditor->getSelectedFrameIDs()[0]);
+            Number aspectRatio = frame.coordinates.w / frame.coordinates.h;
+            Number textureAspectRatio = ((Number)sprite->getTexture()->getWidth()) / ((Number)sprite->getTexture()->getHeight());
+            Number frameHeight = frame.coordinates.h * ((Number)sprite->getTexture()->getHeight());
+            Number frameWidth = frameHeight * aspectRatio * textureAspectRatio;
+            spriteState->setBoundingBox(Vector2(frameWidth, frameHeight));
+        }
+        
+        stateEditor->getDetailsEditor()->refreshState();
+        
+    } else if(actionName == "changed_frames") {
+        sprite->clearFrames();
+        for(int i=0; i < spriteData->spriteFrames.size(); i++) {
+            sprite->addSpriteFrame(spriteData->spriteFrames[i]);
+        }
+    } else if(actionName == "changed_image") {
+        spriteSheetEditor->sprite->loadTexture(spriteData->name);
+        spriteSheetEditor->previewImage->setTexture(sprite->getTexture());
+        
+    } else if(actionName == "changed_state_info") {
+        spriteData->state->setSpriteOffset(spriteData->stateOffset);
+        spriteData->state->setBoundingBox(spriteData->stateBBox);
+        spriteData->state->setStateFPS(spriteData->stateFPS);
+        spriteData->state->setPixelsPerUnit(spriteData->stateScale);
+        stateEditor->getDetailsEditor()->refreshState();
+    }
+
 }
 
 void PolycodeSpriteEditor::saveFile() {
@@ -1952,6 +2313,7 @@ void PolycodeSpriteEditor::saveFile() {
         
     }
     fileObject.saveToXML(filePath);
+    setHasChanges(false);
 }
 
 void PolycodeSpriteEditor::Resize(int x, int y) {

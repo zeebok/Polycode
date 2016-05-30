@@ -23,12 +23,15 @@ THE SOFTWARE.
 #pragma once
 #include "PolyString.h"
 #include "PolyGlobals.h"
+#include "PolyColor.h"
 #include "PolyImage.h"
 
 #include "PolyFont.h"
 
 #include FT_GLYPH_H
 #include FT_IMAGE_H
+
+#define LCD_BLEND_GAMMA 2.2
 
 namespace Polycode {
 
@@ -71,7 +74,7 @@ namespace Polycode {
              * @param premultiplyAlpha If set to true, will premultiply alpha in the label image.
              * @see Font
              */
-			Label(Font *font, const String& text, int size, int antiAliasMode, bool premultiplyAlpha = false);
+			Label(Font *font, const String& text, int size, int antiAliasMode, bool premultiplyAlpha = false, const Color &backgroundColor = Color(0.0, 0.0, 0.0, 0.0), const Color &foregroundColor = Color(1.0, 1.0, 1.0, 1.0));
 			virtual ~Label();
         
             /**
@@ -178,20 +181,32 @@ namespace Polycode {
 			static const int ANTIALIAS_FULL = 0;
 			static const int ANTIALIAS_NONE = 1;
 			static const int ANTIALIAS_STRONG = 2;			
-			
+			static const int ANTIALIAS_LCD = 3;
+			static const int ANTIALIAS_LCD_HINT = 4;
+			static const int ANTIALIAS_FULL_HINT = 5;
             /**
              * Returns the pixel distance from top of image to the baseline of the rendered text.
              */
 			int getBaselineAdjust();
         
+            void setBackgroundColor(const Color &color);
+            void setForegroundColor(const Color &color);
+            void setColors(const Color &backgroundColor, const Color &foregroundColor);
+        
+            Color getBackgroundColor();
+            Color getForegroundColor();
+        
 			bool optionsChanged();
 			
 		protected:
         
+            Color backgroundColor;
+            Color foregroundColor;
+        
             void computeStringBbox(GlyphData *glyphData, FT_BBox *abbox);
             void precacheGlyphs(String text, GlyphData *glyphData);
             void renderGlyphs(GlyphData *glyphData);
-            void drawGlyphBitmap(FT_Bitmap *bitmap, unsigned int x, unsigned int y, Color glyphColor);
+            void drawGlyphBitmap(FT_Bitmap *bitmap, unsigned int x, unsigned int y, const Color &glyphColor);
 		
 			bool _optionsChanged;
 			GlyphData labelData;

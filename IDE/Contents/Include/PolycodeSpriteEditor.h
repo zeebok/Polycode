@@ -29,6 +29,32 @@
 
 using namespace Polycode;
 
+class PolycodeSpriteEditorActionData : public PolycodeEditorActionData {
+public:
+    PolycodeSpriteEditorActionData() {
+        reverse = true;
+        sprite = NULL;
+        state = NULL;
+    }
+    
+    ~PolycodeSpriteEditorActionData() {
+        
+    }
+
+    Sprite *sprite;
+    SpriteState *state;
+    String name;
+    
+    Number stateFPS;
+    Number stateScale;
+    Vector2 stateBBox;
+    Vector2 stateOffset;
+    
+    std::vector<unsigned int> frameIDs;
+    std::vector<SpriteFrame> spriteFrames;
+    bool reverse;
+};
+
 class SpritePreview : public UIElement {
     public:
         SpritePreview(SpriteSet *spriteSet);
@@ -72,6 +98,11 @@ class SpriteSheetEditor : public UIElement {
     
         void Resize(Number width, Number height);
     
+        PolycodeEditor *editor;
+    
+        SpriteSet *sprite;
+        UIRect *previewImage;
+    
     protected:
     
         UIRect *headerBg;
@@ -93,8 +124,6 @@ class SpriteSheetEditor : public UIElement {
         Vector2 panMouseBase;
         bool panning;
     
-        SpriteSet *sprite;
-        UIRect *previewImage;
     
         std::vector<Vector2> defaultAnchors;
     
@@ -139,7 +168,9 @@ class SpriteBrowser : public UIElement {
     
         Sprite *getSelectedSpriteEntry();
     
+        PolycodeEditor *editor;
     protected:
+    
     
         UIRect *headerBg;
         SpriteSet *spriteSet;
@@ -178,6 +209,8 @@ class SpriteStateEditBar : public UIElement {
     
         void setSceneSprite(SceneSprite *sprite);
         void setSpriteState(SpriteState *state);
+    
+        PolycodeEditor *editor;
     
     protected:
     
@@ -220,6 +253,7 @@ class SpriteStateBrowser : public UIElement {
         UIImageButton *newStateButton;
         UIImageButton *removeStateButton;
         UIImageButton *moreButton;
+        PolycodeEditor *editor;
     
 };
 
@@ -237,11 +271,15 @@ class SpriteStateEditorDetails : public UIElement {
         SpriteState *getSpriteState();
     
         void setSceneSprite(SceneSprite *spritePreview);
+
+        PolycodeSpriteEditorActionData *makeStateData();
     
         void refreshState();
     
         UIButton *getAppendFramesButton();
         SpriteStateEditBar *getEditBar();
+    
+        PolycodeEditor *editor;
     
     protected:
     
@@ -281,9 +319,10 @@ class SpriteStateEditor : public UIElement {
         void Resize(Number width, Number height);
     
         SpriteStateEditorDetails *getDetailsEditor();
-    
+        SpriteStateBrowser *getStateBrowser();
         SpriteState *getSelectedState();
-
+        PolycodeEditor *editor;
+    
     protected:
         UITreeContainer *stateTreeView;
         SpriteSet *spriteSet;
@@ -314,6 +353,7 @@ class PolycodeSpriteEditor : public PolycodeEditor {
 		void Resize(int x, int y);
 		void saveFile();
     
+        void doAction(String actionName, PolycodeEditorActionData *data);
         void selectAll();
 				
 	protected:
@@ -323,6 +363,8 @@ class PolycodeSpriteEditor : public PolycodeEditor {
         UIHSizer *topSizer;
     
         UIHSizer *bottomSizer;
+    
+        PolycodeSpriteEditorActionData *beforeData;
     
         SpriteSheetEditor *spriteSheetEditor;
         SpriteBrowser *spriteBrowser;

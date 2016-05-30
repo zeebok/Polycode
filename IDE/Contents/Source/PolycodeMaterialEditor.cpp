@@ -44,7 +44,7 @@ PostEditorPane::PostEditorPane(ResourcePool *resourcePool) : UIElement() {
 	baseProps = new PropSheet("EFFECT OPTIONS", "");
 	propList->addPropSheet(baseProps);
 
-	nameProp = new StringProp("Name");
+	nameProp = new StringProp("Name", this);
 	baseProps->addProp(nameProp);
 	nameProp->addEventListener(this, Event::CHANGE_EVENT);
 	
@@ -220,7 +220,7 @@ CubemapEditorPane::CubemapEditorPane(ResourcePool *resourcePool) : UIElement() {
 	PropSheet *baseProps1 = new PropSheet("CUBEMAP OPTIONS", "");
 	propList->addPropSheet(baseProps1);
 
-	nameProp = new StringProp("Name");
+	nameProp = new StringProp("Name", this);
 	baseProps1->addProp(nameProp);
 	
 	baseProps1->propHeight = 70;
@@ -362,7 +362,7 @@ ShaderEditorPane::ShaderEditorPane(ResourcePool *resourcePool) : UIElement() {
 	PropSheet *baseProps = new PropSheet("SHADER SETTINGS", "");
 	propList->addPropSheet(baseProps);
 	
-	nameProp = new StringProp("Name");
+	nameProp = new StringProp("Name", this);
 	baseProps->addProp(nameProp);	
 	nameProp->addEventListener(this, Event::CHANGE_EVENT);	
 	
@@ -379,11 +379,11 @@ ShaderEditorPane::ShaderEditorPane(ResourcePool *resourcePool) : UIElement() {
 	baseProps->addProp(fragmentProgramProp);	
 	fragmentProgramProp->addEventListener(this, Event::CHANGE_EVENT);	
 	
-	pointLightsProp = new NumberProp("Num point lights");
+	pointLightsProp = new NumberProp("Num point lights", this);
 	baseProps->addProp(pointLightsProp);
 	pointLightsProp->addEventListener(this, Event::CHANGE_EVENT);
 
-	spotLightsProp = new NumberProp("Num spotlights");
+	spotLightsProp = new NumberProp("Num spotlights", this);
 	baseProps->addProp(spotLightsProp);	
 	spotLightsProp->addEventListener(this, Event::CHANGE_EVENT);
 
@@ -860,7 +860,7 @@ MaterialEditorPane::MaterialEditorPane() : UIElement() {
 	PropSheet *baseProps = new PropSheet("MATERIAL SETTINGS", "");
 	propList->addPropSheet(baseProps);
 	
-	nameProp = new StringProp("Name");
+	nameProp = new StringProp("Name", this);
 	baseProps->addProp(nameProp);	
 	nameProp->addEventListener(this, Event::CHANGE_EVENT);
 		
@@ -905,13 +905,16 @@ MaterialEditorPane::MaterialEditorPane() : UIElement() {
 void MaterialEditorPane::reloadShaders() {
 
 	shaderProp->comboEntry->clearItems();
-
+    //TODO: FIX TO USE GLOBAL RESOURCE POOL    
+/*
 	MaterialManager *materialManager = CoreServices::getInstance()->getMaterialManager();
 	for(int i=0; i < materialManager->getNumShaders(); i++) {
 		if(!materialManager->getShaderByIndex(i)->screenShader) {
 			shaderProp->comboEntry->addComboItem(materialManager->getShaderByIndex(i)->getName(), (void*)materialManager->getShaderByIndex(i));
 		}
 	}	
+ */
+    
 }
 
 void MaterialEditorPane::Resize(Number width, Number height) {
@@ -1507,7 +1510,9 @@ void PolycodeMaterialEditor::handleEvent(Event *event) {
 			if(newShader) {
 				materialBrowser->addShader(newShader)->setSelected();
 				shaders.push_back(newShader);
-				CoreServices::getInstance()->getMaterialManager()->addShader(newShader);
+                
+                //TODO: FIX TO USE GLOBAL RESOURCE POOL
+				//CoreServices::getInstance()->getMaterialManager()->addShader(newShader);
 				setHasChanges(true);	
 			} else {
 				printf("Error creating shader!\n");

@@ -77,6 +77,7 @@ void PhysicsScene::initPhysicsScene(Vector3 size) {
 	collisionConfiguration = new btDefaultCollisionConfiguration();	
 	btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);	
 	
+    
 	solver = new btSequentialImpulseConstraintSolver();
 	
 	btVector3 worldMin(-size.x * 0.5, -size.y * 0.5, -size.z * 0.5);
@@ -85,7 +86,6 @@ void PhysicsScene::initPhysicsScene(Vector3 size) {
 	
 	broadphase = new btDbvtBroadphase();	
 	physicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-	
     
 //	physicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
 	physicsWorld->setGravity(btVector3(0,-10,0));
@@ -116,8 +116,8 @@ void PhysicsScene::processWorldCollisions() {
 	for (int i=0;i<numManifolds;i++)
 	{
 		btPersistentManifold* contactManifold =  world->getDispatcher()->getManifoldByIndexInternal(i);
-		btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-		btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+		btCollisionObject* obA = (btCollisionObject*)contactManifold->getBody0();
+		btCollisionObject* obB = (btCollisionObject*)contactManifold->getBody1();
 	
 		
 		int numContacts = contactManifold->getNumContacts();
@@ -207,7 +207,7 @@ PhysicsCharacter *PhysicsScene::trackCharacterChild(Entity *newEntity, Number ma
 	
 	physicsWorld->getBroadphase()->getOverlappingPairCache()->cleanProxyFromPairs(newPhysicsEntity->ghostObject->getBroadphaseHandle(),physicsWorld->getDispatcher());
 	
-	newPhysicsEntity->character->reset ();	
+	newPhysicsEntity->character->reset (world);
 	newPhysicsEntity->character->setUseGhostSweepTest(false);
 	
 	physicsChildren.push_back(newPhysicsEntity);
@@ -313,40 +313,37 @@ void PhysicsScene::removeEntity(Entity *entity) {
 	}
 }
 
-void PhysicsScene::removeConstraint(PhysicsHingeConstraint *constraint) {
+
+void PhysicsScene::removeConstraint(PhysicsConstraint *constraint) {
 	physicsWorld->removeConstraint(constraint->btConstraint);
 }
 
-PhysicsHingeConstraint::~PhysicsHingeConstraint() {
-	delete btConstraint;
-}
-
 void PhysicsHingeConstraint::setLimits(Number minLimit, Number maxLimit) {
-	btConstraint->setLimit(minLimit, maxLimit);
+	_btHingeConstraint->setLimit(minLimit, maxLimit);
 }
 
 Number PhysicsHingeConstraint::getAngle() {
-	return btConstraint->getHingeAngle();
+	return _btHingeConstraint->getHingeAngle();
 }
 
 void PhysicsGenericConstraint::setLinearLowerLimit(Vector3 limit) {
 	btVector3 btLimit = btVector3(limit.x, limit.y, limit.z);
-	btConstraint->setLinearLowerLimit(btLimit);
+	btGenericConstraint->setLinearLowerLimit(btLimit);
 }
 
 void PhysicsGenericConstraint::setLinearUpperLimit(Vector3 limit) {
 	btVector3 btLimit = btVector3(limit.x, limit.y, limit.z);
-	btConstraint->setLinearUpperLimit(btLimit);
+	btGenericConstraint->setLinearUpperLimit(btLimit);
 }
 
 void PhysicsGenericConstraint::setAngularLowerLimit(Vector3 limit) {
 	btVector3 btLimit = btVector3(limit.x, limit.y, limit.z);
-	btConstraint->setAngularLowerLimit(btLimit);
+	btGenericConstraint->setAngularLowerLimit(btLimit);
 }
 
 void PhysicsGenericConstraint::setAngularUpperLimit(Vector3 limit) {
 	btVector3 btLimit = btVector3(limit.x, limit.y, limit.z);
-	btConstraint->setAngularUpperLimit(btLimit);
+	btGenericConstraint->setAngularUpperLimit(btLimit);
 }
 
 PhysicsGenericConstraint *PhysicsScene::createGenericConstraint(Entity *entity) {
@@ -361,10 +358,33 @@ PhysicsGenericConstraint *PhysicsScene::createGenericConstraint(Entity *entity) 
 	btTransform frame;
 	frame.setIdentity();
 	
-	constraint->btConstraint = new btGeneric6DofConstraint(*pEnt->rigidBody, frame, true);
+	constraint->btGenericConstraint = new btGeneric6DofConstraint(*pEnt->rigidBody, frame, true);
+    constraint->btConstraint = constraint->btGenericConstraint;
 	physicsWorld->addConstraint(constraint->btConstraint);
-	
-	return constraint;
+    return constraint;
+}
+
+PhysicsPointToPointConstraint *PhysicsScene::createPointToPointConstraint(Entity *entity1, Entity *entity2, const Vector3 &pivot1, const Vector3 &pivot2) {
+    
+    PhysicsPointToPointConstraint *constraint = new PhysicsPointToPointConstraint();
+    
+    PhysicsEntity *pEnt1 = getPhysicsEntityByEntity(entity1);
+    PhysicsEntity *pEnt2 = getPhysicsEntityByEntity(entity2);
+    
+    if(!pEnt1 || !pEnt2) {
+        return NULL;
+    }
+    
+    btVector3 btPivot1 = btVector3(pivot1.x, pivot1.y, pivot1.z);
+    btVector3 btPivot2 = btVector3(pivot2.x, pivot2.y, pivot2.z);
+    
+    constraint->btPointToPointConstraint = new btPoint2PointConstraint(*pEnt1->rigidBody,
+                            *pEnt2->rigidBody,
+                            btPivot1,
+                            btPivot2);
+    constraint->btConstraint = constraint->btPointToPointConstraint;
+	physicsWorld->addConstraint(constraint->btConstraint);
+    return constraint;
 }
 
 PhysicsHingeConstraint * PhysicsScene::createHingeConstraint(Entity *entity, Vector3 pivot, Vector3 axis, Number minLimit, Number maxLimit) {
@@ -379,10 +399,11 @@ PhysicsHingeConstraint * PhysicsScene::createHingeConstraint(Entity *entity, Vec
 	
 	btHingeConstraint *hingeConstraint = new btHingeConstraint( *pEnt->rigidBody, btPivot, btAxis );
 	hingeConstraint->setLimit(minLimit, maxLimit);
+	
+	constraint->_btHingeConstraint = hingeConstraint;
+	
+    constraint->btConstraint = constraint->_btHingeConstraint;
 	physicsWorld->addConstraint(hingeConstraint);
-	
-	constraint->btConstraint = hingeConstraint;
-	
 	return constraint;
 }
 
@@ -404,10 +425,9 @@ PhysicsHingeConstraint *PhysicsScene::createHingeJoint(Entity *entity1, Entity *
 
 	btHingeConstraint *hingeConstraint = new btHingeConstraint(*pEnt1->rigidBody, *pEnt2->rigidBody, btPivot1, btPivot2, btAxis1, btAxis2 );
 	hingeConstraint->setLimit(minLimit, maxLimit);
-	physicsWorld->addConstraint(hingeConstraint);
 	
 	constraint->btConstraint = hingeConstraint;
-	
+	physicsWorld->addConstraint(hingeConstraint);
 	return constraint;	
 	
 }
@@ -451,3 +471,4 @@ PhysicsEntity *PhysicsScene::addPhysicsChild(Entity *newEntity, int type, Number
 	addEntity(newEntity);	
 	return trackPhysicsChild(newEntity, type, mass, friction, restitution, group, compoundChildren);	
 }
+
